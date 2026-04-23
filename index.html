@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Master</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e10;
+    --surface: #17171a;
+    --surface2: #1f1f24;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --accent: #7c6ff7;
+    --accent2: #a89cf7;
+    --accent-glow: rgba(124,111,247,0.18);
+    --text: #f0eff8;
+    --text2: #9896a8;
+    --text3: #5e5c6e;
+    --green: #4ade80;
+    --green-bg: rgba(74,222,128,0.08);
+    --red: #f87171;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --serif: 'Instrument Serif', serif;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* Subtle grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,111,247,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,111,247,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 2.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .logo-block { display: flex; align-items: center; gap: 14px; }
+
+  .logo-icon {
+    width: 42px; height: 42px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 0 24px var(--accent-glow);
+  }
+
+  .logo-icon svg { width: 22px; height: 22px; }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: 26px;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+
+  .tagline {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 2px;
+    font-family: var(--mono);
+    letter-spacing: 0.04em;
+  }
+
+  .api-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: 999px;
+    padding: 6px 6px 6px 14px;
+    cursor: pointer;
+  }
+
+  .api-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text3);
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .api-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+  .api-label { font-size: 12px; color: var(--text2); font-family: var(--mono); }
+
+  .api-btn {
+    font-size: 11px;
+    padding: 4px 10px;
+    background: var(--surface2);
+    border: 0.5px solid var(--border2);
+    border-radius: 999px;
+    color: var(--text2);
+    cursor: pointer;
+    font-family: var(--mono);
+    transition: all 0.15s;
+  }
+  .api-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* API Key Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    width: 100%;
+    max-width: 440px;
+  }
+
+  .modal h2 {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 20px;
+    font-weight: 400;
+    margin-bottom: 8px;
+  }
+
+  .modal p { font-size: 13px; color: var(--text2); margin-bottom: 1.25rem; line-height: 1.6; }
+
+  .modal p a { color: var(--accent2); text-decoration: none; }
+  .modal p a:hover { text-decoration: underline; }
+
+  .modal input {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--bg);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--mono);
+    margin-bottom: 1rem;
+    outline: none;
+  }
+  .modal input:focus { border-color: var(--accent); }
+
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  .btn {
+    padding: 8px 18px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 0.5px solid transparent;
+    font-family: var(--sans);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--border2);
+    color: var(--text2);
+  }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Section label */
+  .section-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 10px;
+  }
+
+  /* Tool grid */
+  .card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .tool-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 1.5rem;
+  }
+
+  .tool-btn {
+    padding: 5px 13px;
+    font-size: 12px;
+    font-family: var(--mono);
+    border: 0.5px solid var(--border2);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .tool-btn:hover { border-color: var(--accent); color: var(--accent2); }
+  .tool-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+
+  /* Textarea */
+  .field-label {
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 6px;
+    font-family: var(--mono);
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 110px;
+    padding: 12px 14px;
+    background: var(--bg);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--sans);
+    resize: vertical;
+    line-height: 1.65;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--text3); }
+
+  /* Options row */
+  .options-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 1rem;
+  }
+
+  .opt-group { flex: 1; min-width: 130px; }
+
+  select {
+    width: 100%;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text2);
+    font-size: 12px;
+    font-family: var(--mono);
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235e5c6e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+  }
+  select:focus { border-color: var(--accent); }
+
+  /* Generate button */
+  .gen-btn {
+    width: 100%;
+    margin-top: 1.25rem;
+    padding: 12px;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: var(--sans);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 0 28px var(--accent-glow);
+    letter-spacing: 0.01em;
+  }
+  .gen-btn:hover { opacity: 0.88; }
+  .gen-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.25);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.65s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Output */
+  .output-card {
+    display: none;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    animation: fadeUp 0.3s ease;
+  }
+  .output-card.visible { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .output-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .meta-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .pill {
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 0.5px solid var(--border2);
+    color: var(--text3);
+    background: var(--surface2);
+  }
+
+  .pill.tool { color: var(--accent2); border-color: rgba(124,111,247,0.3); background: var(--accent-glow); }
+
+  .copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    font-size: 12px;
+    font-family: var(--mono);
+    background: var(--surface2);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent2); }
+  .copy-btn.copied { background: var(--green-bg); border-color: rgba(74,222,128,0.3); color: var(--green); }
+
+  .output-box {
+    background: var(--bg);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    font-size: 13px;
+    font-family: var(--mono);
+    line-height: 1.8;
+    color: #d4d2e8;
+    white-space: pre-wrap;
+    word-break: break-word;
+    min-height: 60px;
+  }
+
+  .strategy-box {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: var(--accent-glow);
+    border-left: 2px solid var(--accent);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--accent2);
+    line-height: 1.6;
+  }
+
+  /* History */
+  .history-card {
+    display: none;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .history-card.visible { display: block; }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .history-item:hover { background: var(--surface2); }
+
+  .h-tool {
+    font-size: 10px;
+    font-family: var(--mono);
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--accent-glow);
+    color: var(--accent2);
+    border: 0.5px solid rgba(124,111,247,0.2);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .h-preview {
+    font-size: 12px;
+    color: var(--text2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+  }
+
+  .h-copy {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    background: var(--surface2);
+    border: 0.5px solid var(--border2);
+    color: var(--text3);
+    cursor: pointer;
+    font-family: var(--mono);
+    flex-shrink: 0;
+  }
+  .h-copy:hover { color: var(--text); }
+
+  /* No API key warning */
+  .warn-box {
+    display: none;
+    background: rgba(248,113,113,0.07);
+    border: 0.5px solid rgba(248,113,113,0.25);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--red);
+    font-family: var(--mono);
+    margin-top: 10px;
+  }
+  .warn-box.visible { display: block; }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text3);
+    margin-top: 2rem;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @media (max-width: 520px) {
+    .app { padding: 1.5rem 1rem 3rem; }
+    h1 { font-size: 22px; }
+    header { flex-direction: column; }
+    .api-pill { align-self: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- API Key Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2>Connect your API key</h2>
+    <p>Enter your Anthropic API key to power prompt generation. Your key is stored only in your browser's local storage and never sent anywhere except directly to Anthropic's API.<br><br>
+    Get a key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></p>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off" />
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveKey()">Save key</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+
+  <header>
+    <div class="logo-block">
+      <div class="logo-icon">
+        <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 6h14M4 11h9M4 16h11" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="18" cy="15.5" r="3.5" fill="rgba(255,255,255,0.15)" stroke="#fff" stroke-width="1.3"/>
+          <path d="M17 15.5l1 1 2-2" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Prompt Master</h1>
+        <div class="tagline">optimised prompts for any AI tool</div>
+      </div>
+    </div>
+
+    <div class="api-pill" onclick="openModal()">
+      <div class="api-dot" id="apiDot"></div>
+      <span class="api-label" id="apiLabel">No API key</span>
+      <button class="api-btn" id="apiActionBtn">Connect</button>
+    </div>
+  </header>
+
+  <!-- Main card -->
+  <div class="card">
+    <div class="section-label">Target tool</div>
+    <div class="tool-grid" id="toolGrid">
+      <button class="tool-btn active" data-tool="ChatGPT / GPT-4o">ChatGPT / GPT-4o</button>
+      <button class="tool-btn" data-tool="Claude">Claude</button>
+      <button class="tool-btn" data-tool="Codex / o3">Codex / o3</button>
+      <button class="tool-btn" data-tool="Gemini 2.x">Gemini 2.x</button>
+      <button class="tool-btn" data-tool="Antigravity">Antigravity</button>
+      <button class="tool-btn" data-tool="Cursor">Cursor</button>
+      <button class="tool-btn" data-tool="GitHub Copilot">GitHub Copilot</button>
+      <button class="tool-btn" data-tool="Midjourney">Midjourney</button>
+      <button class="tool-btn" data-tool="DALL-E">DALL-E</button>
+      <button class="tool-btn" data-tool="Stable Diffusion">Stable Diffusion</button>
+      <button class="tool-btn" data-tool="Sora / Runway">Sora / Runway</button>
+      <button class="tool-btn" data-tool="ElevenLabs">ElevenLabs</button>
+      <button class="tool-btn" data-tool="Perplexity">Perplexity</button>
+      <button class="tool-btn" data-tool="Ollama">Ollama</button>
+      <button class="tool-btn" data-tool="Qwen">Qwen</button>
+      <button class="tool-btn" data-tool="n8n / Zapier">n8n / Zapier</button>
+      <button class="tool-btn" data-tool="Devin / Manus">Devin / Manus</button>
+      <button class="tool-btn" data-tool="v0 / Bolt / Lovable">v0 / Bolt / Lovable</button>
+    </div>
+
+    <div class="field-label">Describe what you want to do</div>
+    <textarea id="taskInput" placeholder="e.g. Scrape Barclays and Halifax for 2-year remortgage rates at 60%, 70%, 75% LTV for a £390K loan and return a comparison table…"></textarea>
+
+    <div class="options-row">
+      <div class="opt-group">
+        <div class="field-label">Output format</div>
+        <select id="outputFormat">
+          <option value="auto">Auto-detect</option>
+          <option value="plain text">Plain text</option>
+          <option value="markdown">Markdown</option>
+          <option value="JSON">JSON</option>
+          <option value="code">Code</option>
+          <option value="bullet list">Bullet list</option>
+          <option value="step-by-step">Step-by-step</option>
+          <option value="table">Table</option>
+        </select>
+      </div>
+      <div class="opt-group">
+        <div class="field-label">Tone / style</div>
+        <select id="toneStyle">
+          <option value="auto">Auto</option>
+          <option value="professional">Professional</option>
+          <option value="casual">Casual</option>
+          <option value="technical">Technical</option>
+          <option value="creative">Creative</option>
+          <option value="concise">Concise</option>
+        </select>
+      </div>
+      <div class="opt-group">
+        <div class="field-label">Complexity</div>
+        <select id="complexity">
+          <option value="standard">Standard</option>
+          <option value="minimal">Minimal</option>
+          <option value="detailed">Detailed (few-shot)</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="gen-btn" id="genBtn" onclick="generate()">
+      Generate prompt
+    </button>
+
+    <div class="warn-box" id="warnBox">⚠ Add your Anthropic API key first — click "Connect" above.</div>
+  </div>
+
+  <!-- Output -->
+  <div class="output-card" id="outputCard">
+    <div class="output-header">
+      <div class="meta-pills">
+        <span class="pill tool" id="metaTool"></span>
+        <span class="pill" id="metaInfo"></span>
+      </div>
+      <button class="copy-btn" id="copyBtn" onclick="copyPrompt()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M3 11V3a1 1 0 0 1 1-1h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Copy prompt
+      </button>
+    </div>
+    <div class="output-box" id="outputBox"></div>
+    <div class="strategy-box" id="strategyBox" style="display:none;"></div>
+  </div>
+
+  <!-- History -->
+  <div class="history-card" id="historyCard">
+    <div class="section-label">Recent — click any to reload</div>
+    <div id="historyList"></div>
+  </div>
+
+  <footer>prompt master · powered by claude · key stored locally only</footer>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let apiKey = localStorage.getItem('pm_api_key') || '';
+  let selectedTool = 'ChatGPT / GPT-4o';
+  let lastPrompt = '';
+  let history = JSON.parse(localStorage.getItem('pm_history') || '[]');
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  updateKeyUI();
+  renderHistory();
+
+  document.getElementById('toolGrid').addEventListener('click', e => {
+    const btn = e.target.closest('.tool-btn');
+    if (!btn) return;
+    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedTool = btn.dataset.tool;
+  });
+
+  // ── API Key Modal ──────────────────────────────────────────────────────────
+  function openModal() {
+    document.getElementById('apiKeyInput').value = apiKey;
+    document.getElementById('modalOverlay').classList.add('open');
+    setTimeout(() => document.getElementById('apiKeyInput').focus(), 100);
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+
+  function saveKey() {
+    const val = document.getElementById('apiKeyInput').value.trim();
+    if (!val) return;
+    apiKey = val;
+    localStorage.setItem('pm_api_key', apiKey);
+    updateKeyUI();
+    closeModal();
+  }
+
+  document.getElementById('apiKeyInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') saveKey();
+    if (e.key === 'Escape') closeModal();
+  });
+
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  });
+
+  function updateKeyUI() {
+    const dot = document.getElementById('apiDot');
+    const label = document.getElementById('apiLabel');
+    const btn = document.getElementById('apiActionBtn');
+    if (apiKey) {
+      dot.classList.add('connected');
+      label.textContent = 'sk-ant-···' + apiKey.slice(-4);
+      btn.textContent = 'Change';
+    } else {
+      dot.classList.remove('connected');
+      label.textContent = 'No API key';
+      btn.textContent = 'Connect';
+    }
+  }
+
+  // ── Generate ───────────────────────────────────────────────────────────────
+  async function generate() {
+    const task = document.getElementById('taskInput').value.trim();
+    if (!task) { document.getElementById('taskInput').focus(); return; }
+
+    if (!apiKey) {
+      document.getElementById('warnBox').classList.add('visible');
+      return;
+    }
+    document.getElementById('warnBox').classList.remove('visible');
+
+    const fmt = document.getElementById('outputFormat').value;
+    const tone = document.getElementById('toneStyle').value;
+    const cplx = document.getElementById('complexity').value;
+
+    const btn = document.getElementById('genBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div> Generating…';
+
+    const systemPrompt = `You are an expert prompt engineer. Given a task and a target AI tool, output an optimised production-ready prompt for that tool.
+
+Target tool: ${selectedTool}
+Output format preference: ${fmt}
+Tone: ${tone}
+Complexity: ${cplx}
+
+Return EXACTLY three things — nothing else, no preamble:
+1. The prompt block, wrapped between ===START=== and ===END===
+2. One line starting with META: e.g. "META: ChatGPT / GPT-4o | Researcher template | ~180 tokens"
+3. One line starting with STRATEGY: one sentence explaining the key optimisation made
+
+Tool-specific routing rules:
+- ChatGPT/GPT-4o: Role in system prompt, numbered steps, explicit length cap, "Skip preamble. No caveats. Answer directly."
+- Claude: XML tags for complex tasks, explain WHY, explicit output format, minimal over-engineering note for coding
+- Codex/o3 or any reasoning model: SHORT clean instructions ONLY, NO chain-of-thought, NO reasoning scaffolding, goal + success criteria only, under 200 words
+- Gemini/Antigravity: Leverage long context, add citation grounding, explicit format lock; Antigravity excels at frontend code
+- Cursor/Copilot: Scope to specific file/function, stop conditions, human review triggers for destructive actions
+- Midjourney/DALL-E/SD: Subject + style + lighting + composition + mood + technical params
+- Sora/Runway: Camera movement + subject + duration + mood + cut style
+- ElevenLabs: Emotion + pacing + emphasis markers + speech rate
+- Perplexity: Grounding anchors, citation requirements
+- Ollama/Qwen: Role + format spec + language declaration
+- n8n/Zapier: Trigger → action → field mapping, numbered steps, auth notes
+- Devin/Manus: Starting state, target state, checkpoint triggers, filesystem scope
+- v0/Bolt/Lovable: Component description, stack constraints, no-over-engineering note
+
+NEVER add fabricated techniques (Mixture of Experts, Tree of Thought, Graph of Thought).
+NEVER add CoT to reasoning-native models (o3, Codex).
+Put critical constraints in the first 30% of the prompt.`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: `Task: ${task}` }]
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `API error ${res.status}`);
+      }
+
+      const data = await res.json();
+      const raw = data.content?.map(c => c.text || '').join('\n') || '';
+
+      const promptMatch = raw.match(/===START===([\s\S]*?)===END===/);
+      const metaMatch = raw.match(/META:\s*(.+)/);
+      const strategyMatch = raw.match(/STRATEGY:\s*(.+)/);
+
+      const promptText = promptMatch ? promptMatch[1].trim() : raw.trim();
+      const meta = metaMatch ? metaMatch[1].trim() : `~${Math.round(promptText.split(/\s+/).length * 1.35)} tokens`;
+      const strategy = strategyMatch ? strategyMatch[1].trim() : '';
+
+      lastPrompt = promptText;
+
+      document.getElementById('outputBox').textContent = promptText;
+      document.getElementById('metaTool').textContent = selectedTool;
+      document.getElementById('metaInfo').textContent = meta;
+
+      const strat = document.getElementById('strategyBox');
+      if (strategy) { strat.textContent = '↗ ' + strategy; strat.style.display = 'block'; }
+      else { strat.style.display = 'none'; }
+
+      const copyBtn = document.getElementById('copyBtn');
+      copyBtn.classList.remove('copied');
+      copyBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M3 11V3a1 1 0 0 1 1-1h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Copy prompt';
+
+      document.getElementById('outputCard').classList.add('visible');
+      document.getElementById('outputCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      // Save to history
+      const taskPreview = task.slice(0, 60) + (task.length > 60 ? '…' : '');
+      history.unshift({ tool: selectedTool, task: taskPreview, prompt: promptText });
+      if (history.length > 10) history.pop();
+      localStorage.setItem('pm_history', JSON.stringify(history));
+      renderHistory();
+
+    } catch (err) {
+      document.getElementById('outputBox').textContent = '⚠ Error: ' + err.message;
+      document.getElementById('strategyBox').style.display = 'none';
+      document.getElementById('outputCard').classList.add('visible');
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = 'Generate prompt';
+  }
+
+  // ── Copy ───────────────────────────────────────────────────────────────────
+  function copyPrompt() {
+    if (!lastPrompt) return;
+    navigator.clipboard.writeText(lastPrompt).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.classList.add('copied');
+      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Copied!';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M3 11V3a1 1 0 0 1 1-1h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Copy prompt';
+      }, 2200);
+    });
+  }
+
+  // ── History ────────────────────────────────────────────────────────────────
+  function renderHistory() {
+    const card = document.getElementById('historyCard');
+    const list = document.getElementById('historyList');
+    if (!history.length) { card.classList.remove('visible'); return; }
+    card.classList.add('visible');
+    list.innerHTML = history.map((h, i) => `
+      <div class="history-item" onclick="loadHistory(${i})">
+        <span class="h-tool">${h.tool}</span>
+        <span class="h-preview">${h.task}</span>
+        <button class="h-copy" onclick="event.stopPropagation();copyHistory(${i})">copy</button>
+      </div>
+    `).join('');
+  }
+
+  function loadHistory(i) {
+    const h = history[i];
+    lastPrompt = h.prompt;
+    document.getElementById('outputBox').textContent = h.prompt;
+    document.getElementById('metaTool').textContent = h.tool;
+    document.getElementById('metaInfo').textContent = 'from history';
+    document.getElementById('strategyBox').style.display = 'none';
+    const copyBtn = document.getElementById('copyBtn');
+    copyBtn.classList.remove('copied');
+    copyBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M3 11V3a1 1 0 0 1 1-1h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Copy prompt';
+    document.getElementById('outputCard').classList.add('visible');
+    document.getElementById('outputCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function copyHistory(i) {
+    navigator.clipboard.writeText(history[i].prompt);
+  }
+
+  // Enter key to generate
+  document.getElementById('taskInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) generate();
+  });
+</script>
+</body>
+</html>
